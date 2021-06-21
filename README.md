@@ -8,5 +8,10 @@ As of right now, it doesn't do much, because of the lack of SPI secondary suppor
 - This is my first time ever doing anything libusb related so there may be too much or too little code present to handle the USB connection
 - I haven't written any Python in a while so I'm sorry if the code is messy!
 
+# Dependencies
+- Python 3
+- pyusb > 1.1.1
+- Pillow >= 8.2.0
+
 # Credits
 - Code for image decoding borrowed from https://github.com/lennartba/gbpinter_dump2image_py
