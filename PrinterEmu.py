@@ -72,16 +72,14 @@ else:
     try:
         adapter.set_configuration()
         usb.util.claim_interface(adapter, 0) # Claim the interface
-    except IOError as err:
-        if "Resource busy" in err:
-            print("The device seems to be busy/in use. Exiting...")
-        else:
-            print("Something went wrong, but I'm not sure what. Exiting...")
+    except usb.core.USBError:
+            print("Something went wrong, but I'm not sure what. " \
+            "Make sure your adapter is plugged in properly. Exiting...")
         exit()
 
 # Get the device's active configuration
 cfg = adapter.get_active_configuration()
-intf = cfg[(0,0)]
+intf = cfg[(1,0)] # I think this is the interface we want? USB CDC bulk in/out
 
 # This is where we want to talk to the adapter, receive the image data,
 # add the necessary parts of that data to a list to pass it to CreateImage(),
@@ -90,18 +88,24 @@ intf = cfg[(0,0)]
 
 # We're gonna need an endpoint to read from (and write to?), probably
 # I really don't know but we'll find out
-ep = usb.util.find_descriptor(
+# Grabbing the USB CDC bulk in/out endpoints for now
+ep_in = usb.util.find_descriptor(
     intf,
     custom_match = \
     lambda e: \
         usb.util.endpoint_direction(e.bEndpointAddress) == \
         usb.util.ENDPOINT_IN)
 
-# I don't know if we want an IN endpoint or OUT endpoint
-# Probably one of each actually, for two way communication?
-# But it can't currently seem to find an OUT endpoint and idk what I'm doing yet
-if ep is not None:
-    print("IN endpoint established...")
+ep_out = usb.util.find_descriptor(
+    intf,
+    custom_match = \
+    lambda e: \
+        usb.util.endpoint_direction(e.bEndpointAddress) == \
+        usb.util.ENDPOINT_OUT)
+
+# This is total jank probably, just checking if both endpoints were found
+if ep_in is not None and ep_out is not None:
+    print("IN/OUT endpoints established...")
 else:
     print("Endpoint could not be established. Exiting...")
     exit()
@@ -111,13 +115,14 @@ data = []
 # There's no communication yet tho, so this is about the best I can do for now
 
 # Disconnect the adapter and pass control back to the kernel driver
+adapter.reset()
 usb.util.release_interface(adapter, intf)
 adapter.attach_kernel_driver(0)
 print("Disconnected from adapter...")
 
 # Start image processing with the (hopefully) collected data
-if not os.path.exists('images'):
+if not os.path.exists("images"):
     print("'images' directory does not exist, creating it...")
-    os.makedirs('images')
+    os.makedirs("images")
 
 CreateImage(data)
