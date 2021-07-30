@@ -21,36 +21,40 @@ LIGHT_GREY = (180, 180, 180)
 WHITE = (255, 255, 255)
 
 TILE_WIDTH = 20
-TILE_HEIGHT = 18
-TILE_SIZE = TILE_WIDTH * TILE_HEIGHT
 
-def CreateImage(hexdata, colours=((WHITE, DARK_GREY), (LIGHT_GREY, BLACK))):
-    if len(hexdata) == 0:
+def CreateImage(data, colours=((WHITE, DARK_GREY), (LIGHT_GREY, BLACK))):
+    if len(data) == 0:
         print("There's nothing to do. Exiting...")
         exit()
 
-    dump = hexdata.splitlines()
-    print(f"\n{str(len(dump))} lines to print...\n")
+    data = bytes.fromhex(data)
 
-    for c in range(len(dump) // TILE_SIZE):
-        try:
-            img = Image.new(mode='RGB', size=(TILE_WIDTH * 8, TILE_HEIGHT * 8))
-            pixels = img.load()
-            for h in range(TILE_HEIGHT):
-                for w in range(TILE_WIDTH):
-                    tile = bytes.fromhex(dump[(c*TILE_SIZE) + (h*TILE_WIDTH) + w])
-                    for i in range(8):
-                        for j in range(8):
-                            hi = (tile[i * 2] >> (7 - j)) & 1
-                            lo = (tile[i * 2 + 1] >> (7 - j)) & 1
-                            pixels[(w * 8) + j, (h * 8) + i] = colours[hi][lo]
+    print(f"{str(len(data))} bytes to print...")
 
-            img.save(f"images/decoded_{time.strftime('%Y%m%d - %H%M%S')}.png")
-            print("Saved!")
-        except IndexError as e:
-            print("Provided data doesn't match expected size, " \
-                  "please double check your hex dump!")
-            exit()
+    dump = [data[i:i+16] for i in range(0, len(data), 16)]    # 16 bytes per tile
+    print(f"{str(len(dump))} tiles to print...")
+
+    TILE_HEIGHT = len(dump) // TILE_WIDTH
+    print(f"{TILE_HEIGHT} lines to print...")
+
+    try:
+        img = Image.new(mode='RGB', size=(TILE_WIDTH * 8, TILE_HEIGHT * 8))
+        pixels = img.load()
+        for h in range(TILE_HEIGHT):
+            for w in range(TILE_WIDTH):
+                tile = dump[(h*TILE_WIDTH) + w]
+                for i in range(8):
+                    for j in range(8):
+                        hi = (tile[i * 2] >> (7 - j)) & 1
+                        lo = (tile[i * 2 + 1] >> (7 - j)) & 1
+                        pixels[(w * 8) + j, (h * 8) + i] = colours[hi][lo]
+
+        img.save(f"images/decoded_{time.strftime('%Y%m%d - %H%M%S')}.png")
+        print("Saved!")
+    except IndexError as e:
+        print("Provided data doesn't match expected size, " \
+            "please double check your hex dump!")
+        exit()
 
 #############
 # USB stuff #
@@ -64,7 +68,7 @@ if dev is None:
 
 reattach = False
 
-if dev.kernel_driver_is_active(0):
+if dev.is_kernel_driver_active(0):
     try:
         reattach = True
         dev.detach_kernel_driver(0)
@@ -107,14 +111,21 @@ if epOut is None:
     print("Could not establish an Out endpoint.")
     exit()
 
-print("Control transfer to enable WebUSB...")
+print("Control transfer to enable webserial...")
 dev.ctrl_transfer(bmRequestType = 1, bRequest = 0x22, wIndex = 2, wValue = 0x01)
 
-data = []
+data = ""
+print("Waiting for data...")
+while True:
+    recv = epIn.read(epIn.wMaxPacketSize, 30000)
+    data += ('%s' % '{:{fill}{width}{base}}'.format(int.from_bytes(recv, byteorder='big'), fill='0', width=len(recv*2), base='x'))
+    print(len(data))
+    if len(data) == 11520:
+        break
 
 # Start image processing with the (hopefully) collected data
 if not os.path.exists("images"):
     print("'images' directory does not exist, creating it...")
     os.makedirs("images")
 
-# CreateImage(data)
+CreateImage(data)
