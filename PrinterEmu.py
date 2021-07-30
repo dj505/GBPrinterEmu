@@ -1,8 +1,8 @@
 from PIL import Image, ImageDraw
 import time
 import os
-import usb.core
 import usb.util
+import usb.core
 
 ########################
 # Imade decoding stuff #
@@ -56,73 +56,65 @@ def CreateImage(hexdata, colours=((WHITE, DARK_GREY), (LIGHT_GREY, BLACK))):
 # USB stuff #
 #############
 
-# Look for the TinyUSB device (unsure if this is enough or if I need to check
-# for the Adafruit vendor ID as well, we'll find out I guess)
-adapter = usb.core.find(idVendor=0xcafe, idProduct=0x4011)
+dev = usb.core.find(idVendor=0xcafe, idProduct=0x4011)
 
-# Try to establish A Link to the Past-- I mean, to the cable
-if adapter is None:
-    print("I can't find your link cable adapter!")
+if dev is None:
+    print("I could not find your link cable adapter!")
     exit()
-else:
-    print("Found the link cable adapter! Connecting...")
-    if adapter.is_kernel_driver_active(0): # Check if the kernel driver is using
-        reattach = True                    # the device, and disconnect it if it
-        adapter.detach_kernel_driver(0)    # is so that we can claim it instead
+
+reattach = False
+
+if dev.kernel_driver_is_active(0):
     try:
-        adapter.set_configuration()
-        usb.util.claim_interface(adapter, 0) # Claim the interface
-    except usb.core.USBError:
-            print("Something went wrong, but I'm not sure what. " \
-            "Make sure your adapter is plugged in properly. Exiting...")
+        reattach = True
+        dev.detach_kernel_driver(0)
+        print("Detached kernel driver...")
+    except usb.core.USBError as e:
+        print("Could not detach kernel driver :(")
         exit()
+else:
+    print("No kernel driver attached...")
 
-# Get the device's active configuration
-cfg = adapter.get_active_configuration()
-intf = cfg[(1,0)] # I think this is the interface we want? USB CDC bulk in/out
+dev.reset()
+dev.set_configuration()
 
-# This is where we want to talk to the adapter, receive the image data,
-# add the necessary parts of that data to a list to pass it to CreateImage(),
-# send some keepalive stuff, and so on - not completely sure what to do
-# past here quite yet until the adapter supports SPI secondary mode
+cfg = dev.get_active_configuration()
 
-# We're gonna need an endpoint to read from (and write to?), probably
-# I really don't know but we'll find out
-# Grabbing the USB CDC bulk in/out endpoints for now
-ep_in = usb.util.find_descriptor(
+print(f"Configuration: {cfg}")
+
+intf = cfg[(2,0)]
+print(f"Interface: {intf}")
+
+epIn = usb.util.find_descriptor(
     intf,
     custom_match = \
     lambda e: \
         usb.util.endpoint_direction(e.bEndpointAddress) == \
         usb.util.ENDPOINT_IN)
 
-ep_out = usb.util.find_descriptor(
+if epIn is None:
+    print("Could not establish an In endpoint.")
+    exit()
+
+epOut = usb.util.find_descriptor(
     intf,
     custom_match = \
     lambda e: \
         usb.util.endpoint_direction(e.bEndpointAddress) == \
         usb.util.ENDPOINT_OUT)
 
-# This is total jank probably, just checking if both endpoints were found
-if ep_in is not None and ep_out is not None:
-    print("IN/OUT endpoints established...")
-else:
-    print("Endpoint could not be established. Exiting...")
+if epOut is None:
+    print("Could not establish an Out endpoint.")
     exit()
 
-# Put the image data into this list
-data = []
-# There's no communication yet tho, so this is about the best I can do for now
+print("Control transfer to enable WebUSB...")
+dev.ctrl_transfer(bmRequestType = 1, bRequest = 0x22, wIndex = 2, wValue = 0x01)
 
-# Disconnect the adapter and pass control back to the kernel driver
-adapter.reset()
-usb.util.release_interface(adapter, intf)
-adapter.attach_kernel_driver(0)
-print("Disconnected from adapter...")
+data = []
 
 # Start image processing with the (hopefully) collected data
 if not os.path.exists("images"):
     print("'images' directory does not exist, creating it...")
     os.makedirs("images")
 
-CreateImage(data)
+# CreateImage(data)
