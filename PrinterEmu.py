@@ -54,7 +54,7 @@ def CreateImage(data, colours=((WHITE, DARK_GREY), (LIGHT_GREY, BLACK))):
         exit()
     except IndexError as e:
         print("Provided data doesn't match expected size, " \
-            "please double check your hex dump!")
+              "please double check your hex dump!")
         exit()
 
 def CreateImageRGB(red_data, green_data, blue_data, colours=((WHITE, DARK_GREY), (LIGHT_GREY, BLACK))):
@@ -98,7 +98,6 @@ def CreateImageRGB(red_data, green_data, blue_data, colours=((WHITE, DARK_GREY),
                         lo = (tile[i * 2 + 1] >> (7 - j)) & 1
                         red_pixels[(w * 8) + j, (h * 8) + i] = colours[hi][lo]
         red_img = red_img.convert("L")
-        print(f"Red layer image mode is {red_img.mode}")
 
         green_img = Image.new(mode='RGB', size=(TILE_WIDTH * 8, TILE_HEIGHT * 8))
         green_pixels = green_img.load()
@@ -111,7 +110,6 @@ def CreateImageRGB(red_data, green_data, blue_data, colours=((WHITE, DARK_GREY),
                         lo = (tile[i * 2 + 1] >> (7 - j)) & 1
                         green_pixels[(w * 8) + j, (h * 8) + i] = colours[hi][lo]
         green_img = green_img.convert("L")
-        print(f"Green layer image mode is {green_img.mode}")
 
         blue_img = Image.new(mode='RGB', size=(TILE_WIDTH * 8, TILE_HEIGHT * 8))
         blue_pixels = blue_img.load()
@@ -124,7 +122,6 @@ def CreateImageRGB(red_data, green_data, blue_data, colours=((WHITE, DARK_GREY),
                         lo = (tile[i * 2 + 1] >> (7 - j)) & 1
                         blue_pixels[(w * 8) + j, (h * 8) + i] = colours[hi][lo]
         blue_img = blue_img.convert("L")
-        print(f"Blue layer image mode is {blue_img.mode}")
 
         rgb_image = Image.merge("RGB", (red_img, green_img, blue_img))
         rgb_image.save(f"images/decoded_rgb_{time.strftime('%Y%m%d - %H%M%S')}.png")
@@ -132,7 +129,7 @@ def CreateImageRGB(red_data, green_data, blue_data, colours=((WHITE, DARK_GREY),
         exit()
     except IndexError as e:
         print("Provided data doesn't match expected size, " \
-            "please double check your hex dump!")
+              "please double check your hex dump!")
         exit()
 
 #############
