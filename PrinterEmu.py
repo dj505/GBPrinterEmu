@@ -156,8 +156,8 @@ if platform.system() != "Windows":
             exit()
     else:
         print("No kernel driver attached...")
+    dev.reset()
 
-dev.reset()
 dev.set_configuration()
 
 cfg = dev.get_active_configuration()
