@@ -55,7 +55,6 @@ def CreateImage(data, colours=((WHITE, DARK_GREY), (LIGHT_GREY, BLACK))):
         img_timestamp = time.strftime('%Y%m%d - %H%M%S')
         img.save(f"images/decoded_{img_timestamp}.png")
         print(f"Saved to images/decoded_{img_timestamp}.png!")
-        exit()
     except IndexError as e:
         print("Provided data doesn't match expected size, " \
               "please double check your hex dump!")
@@ -131,7 +130,6 @@ def CreateImageRGB(red_data, green_data, blue_data, colours=((WHITE, DARK_GREY),
         img_timestamp = time.strftime('%Y%m%d - %H%M%S')
         rgb_image.save(f"images/decoded_rgb_{time}.png")
         print(f"Saved to images/decoded_rgb_{img_timestamp}.png!")
-        exit()
     except IndexError as e:
         print("Provided data doesn't match expected size, " \
               "please double check your hex dump!")
