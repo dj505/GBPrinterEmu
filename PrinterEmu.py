@@ -15,6 +15,8 @@ import usb.core
 # - lennartba
 # - Cabalist / Ryan Jarvis
 # - BjornB2
+#
+# Now behold, jank.
 
 BLACK = (0, 0, 0)
 DARK_GREY = (90, 90, 90)
@@ -50,8 +52,9 @@ def CreateImage(data, colours=((WHITE, DARK_GREY), (LIGHT_GREY, BLACK))):
                         lo = (tile[i * 2 + 1] >> (7 - j)) & 1
                         pixels[(w * 8) + j, (h * 8) + i] = colours[hi][lo]
 
-        img.save(f"images/decoded_{time.strftime('%Y%m%d - %H%M%S')}.png")
-        print("Saved!")
+        img_timestamp = time.strftime('%Y%m%d - %H%M%S')
+        img.save(f"images/decoded_{img_timestamp}.png")
+        print(f"Saved to images/decoded_{img_timestamp}.png!")
         exit()
     except IndexError as e:
         print("Provided data doesn't match expected size, " \
@@ -125,8 +128,9 @@ def CreateImageRGB(red_data, green_data, blue_data, colours=((WHITE, DARK_GREY),
         blue_img = blue_img.convert("L")
 
         rgb_image = Image.merge("RGB", (red_img, green_img, blue_img))
-        rgb_image.save(f"images/decoded_rgb_{time.strftime('%Y%m%d - %H%M%S')}.png")
-        print("Saved!")
+        img_timestamp = time.strftime('%Y%m%d - %H%M%S')
+        rgb_image.save(f"images/decoded_rgb_{time}.png")
+        print(f"Saved to images/decoded_rgb_{img_timestamp}.png!")
         exit()
     except IndexError as e:
         print("Provided data doesn't match expected size, " \
@@ -156,8 +160,8 @@ if platform.system() != "Windows":
             exit()
     else:
         print("No kernel driver attached...")
-    dev.reset()
 
+dev.reset()
 dev.set_configuration()
 
 cfg = dev.get_active_configuration()
@@ -167,7 +171,11 @@ intf = usb.util.find_descriptor(
     bInterfaceClass = 0xff,
     iInterface = 0x5
 )
-print(intf)
+
+if intf is None:
+    print("Could not find the correct interface. If on Windows, ensure you're" \
+    " using the correct driver.")
+    exit()
 
 epIn = usb.util.find_descriptor(
     intf,
@@ -224,9 +232,11 @@ if not os.path.exists("images"):
 # Select options #
 ##################
 
-print("Please pick an option:\n\
+print("=========================\n\
+Please pick an option:\n\
 1. Print single image\n\
-2. Combine RGB images\n")
+2. Combine RGB images\n\
+=========================")
 
 choice = input("Number: ")
 
