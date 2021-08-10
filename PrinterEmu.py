@@ -1,6 +1,7 @@
 from PIL import Image, ImageDraw
 import time
 import os
+import platform
 import usb.util
 import usb.core
 
@@ -144,16 +145,17 @@ if dev is None:
 
 reattach = False
 
-if dev.is_kernel_driver_active(0):
-    try:
-        reattach = True
-        dev.detach_kernel_driver(0)
-        print("Detached kernel driver...")
-    except usb.core.USBError as e:
-        print("Could not detach kernel driver :(")
-        exit()
-else:
-    print("No kernel driver attached...")
+if platform.system() != "Windows":
+    if dev.is_kernel_driver_active(0):
+        try:
+            reattach = True
+            dev.detach_kernel_driver(0)
+            print("Detached kernel driver...")
+        except usb.core.USBError as e:
+            print("Could not detach kernel driver :(")
+            exit()
+    else:
+        print("No kernel driver attached...")
 
 dev.reset()
 dev.set_configuration()
