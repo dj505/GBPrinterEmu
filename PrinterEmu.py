@@ -162,7 +162,12 @@ dev.set_configuration()
 
 cfg = dev.get_active_configuration()
 
-intf = cfg[(2,0)]
+intf = usb.util.find_descriptor(
+    cfg,
+    bInterfaceClass = 0xff,
+    iInterface = 0x5
+)
+print(intf)
 
 epIn = usb.util.find_descriptor(
     intf,
